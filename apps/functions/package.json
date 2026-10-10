@@ -1,0 +1,17 @@
+{
+    "name": "@vassist/functions",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "@ai-sdk/openai": "^4.0.90",
+        "@neon/config": "^1.8.5",
+        "@vassist/db": "workspace:*",
+        "@vassist/shared": "workspace:*",
+        "ai": "^7.0.134",
+        "unpdf": "^1.8.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.9.3"
+    }
+}

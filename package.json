@@ -1,0 +1,25 @@
+{
+    "name": "vassist",
+    "private": true,
+    "packageManager": "pnpm@12.10.1",
+    "engines": {
+        "node": ">=24"
+    },
+    "scripts": {
+        "dev": "pnpm --filter @vassist/web dev",
+        "build": "pnpm --filter @vassist/web build",
+        "start": "pnpm --filter @vassist/web start",
+        "lint": "eslint",
+        "typecheck": "pnpm -r typecheck",
+        "format": "prettier --write .",
+        "format:check": "prettier --check ."
+    },
+    "devDependencies": {
+        "eslint": "^9.39.5",
+        "eslint-config-next": "16.4.0",
+        "eslint-config-prettier": "^10.1.8",
+        "prettier": "^3.9.9",
+        "prettier-plugin-tailwindcss": "^0.8.1",
+        "typescript": "^5.9.3"
+    }
+}
