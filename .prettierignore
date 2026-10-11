@@ -2,6 +2,8 @@ pnpm-lock.yaml
 .next
 node_modules
 apps/web/public/embed.js
+# Written and updated by Pullfrog, which marks it as not to be edited
+.github/workflows/pullfrog.yml
 # Emitted by the Prisma CLI: contract artefacts and hash-attested migrations
 packages/db/src/prisma/contract.json
 packages/db/src/prisma/contract.d.ts
