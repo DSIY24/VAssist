@@ -14,7 +14,8 @@
         "db:check": "prisma migration check",
         "db:status": "prisma migration status",
         "db:migrate": "prisma db migrate --to @contract",
-        "db:verify": "prisma db verify"
+        "db:verify": "prisma db verify",
+        "db:seed": "node scripts/seed.ts"
     },
     "dependencies": {
         "@prisma/orm-extension-pgvector": "8.0.0-rc.17",

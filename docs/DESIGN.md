@@ -44,6 +44,17 @@ The dashboard and widget use the stock shadcn `neutral` tokens (`background`, `f
 
 The widget's accent is chosen by the owner (PRD D-9: blue by default, or indigo, violet, pink, red, orange, green), each with a readable text color picked automatically. That palette is not defined yet. When it is added, record it here.
 
+**Conversation states.** A state is shown as a `StateBadge` (`components/inbox/state-badge.tsx`), labelled by who replies. Only `waiting` has colour, because it is the only state that asks something of the owner:
+
+| State     | Label   | Badge                                                           |
+| --------- | ------- | --------------------------------------------------------------- |
+| `waiting` | Waiting | `border-attention/30 bg-attention/15 text-attention-foreground` |
+| `ai`      | Agent   | Outline: `border-border text-muted-foreground`                  |
+| `human`   | You     | Filled: `bg-primary text-primary-foreground`                    |
+| `closed`  | Closed  | `bg-muted text-muted-foreground`                                |
+
+`attention` is the one product colour beyond the neutrals: an amber (`--attention`, `oklch(0.769 0.165 70)` in both themes) with a readable text colour per theme (`--attention-foreground`). Use it only for something waiting on the owner: the `waiting` badge and count, the tint (`bg-attention/10`) and edge bar of a waiting row, and the "Waiting for you" banner. Never for decoration.
+
 A marketing surface is dark whatever the theme: it opts into the dark shadcn tokens by putting `dark` on its own root, so focus rings and any stock component inside it read correctly on `poster`.
 
 ---
@@ -186,6 +197,16 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 
 **Empty state** (`components/dashboard/empty-state.tsx`). An icon tile, an `h2` and one muted line, centered in the content area. Used by the "Home" and "Inbox" placeholders.
 
+**Inbox** (`components/inbox/`, `app/dashboard/inbox/`). Three panes that fill the height under the header, each scrolling on its own (`InboxShell`):
+
+- **List** (`md:w-80`, in the inbox layout so it keeps its filter and scroll between conversations). A row of filter buttons with counts (All open, Waiting, Agent, You, Closed; `Button size="sm"`, `secondary` when active, `aria-pressed`), then one row per conversation: "Visitor from {city}, {country}", a short relative time, a two-line preview of the newest message somebody wrote (prefixed "Agent:" or "You:"), and the state badge. Waiting rows come first and carry the attention tint and a 2px edge bar. The open row is `bg-accent`.
+- **Conversation.** A header with the visitor label, the state badge and the actions the state allows ("Take over", "Hand to agent", "Close", which confirms in an `AlertDialog`). The history puts the visitor on the left and the workspace's side on the right, and tells authors apart by side, name and avatar, never by colour: visitor `bg-muted`, agent outlined on `bg-background`, owner `bg-primary`. System messages and the handoff reason are quiet centred lines with an icon, not bubbles. A declined message gets an outline "Declined" badge under it. Markdown renders with Streamdown. The composer is a one-line `Textarea` that grows, with the send button beside it and a hint under it; while the agent or nobody is replying the hint says that sending takes over. A closed conversation shows a notice in its place.
+- **Visitor details** (`w-72`). Label and value rows grouped under small uppercase headings. Beside the conversation from `xl`, toggled from the header; a right-hand `Sheet` below `xl`.
+
+Below `md` the list and the conversation are separate views, with a back arrow in the conversation header. The layout works with the sidebar expanded or collapsed; it does not collapse the sidebar itself.
+
+Times and days depend on the owner's clock and timezone, so they render only after hydration (`useNow`).
+
 ### Rules
 
 - shadcn here is built on **Base UI**, not Radix: compose with the `render` prop where Radix would use `asChild`, and pass `nativeButton={false}` when a button renders a link.
@@ -202,5 +223,5 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 ## 8. Open items
 
 1. The widget accent palette from PRD D-9, with its automatic text colors.
-2. Dashboard patterns (conversation list, state badges, source status) as they are built. The shell, the user button and the empty state exist (section 7).
+2. Dashboard patterns (source status) as they are built. The shell, the user button, the empty state, the conversation list and the state badges exist (sections 2 and 7).
 3. The landing nav links "Knowledge", "Handoff" and "Widget" point at `#` anchors that have no sections yet, because the poster does not scroll. Decide whether they become pages, sections below the poster, or come out.

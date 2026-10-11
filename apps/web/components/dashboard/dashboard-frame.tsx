@@ -24,9 +24,11 @@ export function DashboardFrame({
             style={DASHBOARD_FRAME_STYLE}
         >
             <AppSidebar variant="inset" user={user} />
-            <SidebarInset>
+            {/* `min-w-0` lets a page with fixed-width panes (the inbox) shrink
+                to the space beside the sidebar instead of pushing past it. */}
+            <SidebarInset className="min-w-0">
                 <SiteHeader />
-                <div className="flex flex-1 flex-col">{children}</div>
+                <div className="flex min-w-0 flex-1 flex-col">{children}</div>
             </SidebarInset>
         </SidebarProvider>
     );
