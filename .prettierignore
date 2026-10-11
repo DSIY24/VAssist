@@ -2,3 +2,7 @@ pnpm-lock.yaml
 .next
 node_modules
 apps/web/public/embed.js
+# Emitted by the Prisma CLI: contract artefacts and hash-attested migrations
+packages/db/src/prisma/contract.json
+packages/db/src/prisma/contract.d.ts
+packages/db/migrations

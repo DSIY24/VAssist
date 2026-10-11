@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import lilyFront from "@/public/landing/lily-front.webp";
 import lilyReveal from "@/public/landing/lily-reveal.webp";
-import { BrandMark } from "./brand-mark";
+import { BrandMark } from "@/components/brand-mark";
 import { FlowerReveal } from "./flower-reveal";
 import { PosterMenu } from "./poster-menu";
 import { PosterStage } from "./poster-stage";
@@ -41,7 +41,7 @@ const NAV_LINKS = [
     },
 ] as const;
 
-const CTA = { label: "Get started", href: "/dashboard" } as const;
+const CTA = { label: "Get started", href: "/signup" } as const;
 
 const CHROME_TEXT = "text-[clamp(13px,min(1.302083vw,2.05dvh),25px)]";
 const CORNER_COPY =
