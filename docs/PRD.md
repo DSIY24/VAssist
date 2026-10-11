@@ -4,7 +4,7 @@
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status       | Agreed (confirmed Sep 26, 2026)                                                                                                                 |
 | Owner        | Jan Marshal                                                                                                                                     |
-| Last updated | Sep 26, 2026                                                                                                                                    |
+| Last updated | Oct 10, 2026                                                                                                                                    |
 | Scope        | v1: live chat + AI support agent                                                                                                                |
 | Glossary     | [`CONTEXT.md`](../CONTEXT.md). Terms in this document follow it                                                                                 |
 | Tech stack   | [`TECH-STACK.md`](./TECH-STACK.md). **Coding agents: this is the tech stack, and the source of truth for how to build what this PRD describes** |
@@ -389,5 +389,5 @@ These are open on purpose, not forgotten:
 
 1. ~~**Models.**~~ Resolved: classifier and short replies `gpt-5-4-nano`, answers and suggested questions `gpt-5-6-terra`, embeddings `qwen3-embedding-0-6b`, all through the Neon AI Gateway (TECH-STACK section 8). Image input is deferred with attachments.
 2. ~~**DOCX.**~~ Resolved: deferred.
-3. **Passwordless sign-in.** Check whether magic links work with Neon's shared sender, falling back to an emailed sign-in code or dropping it (see A-1a).
+3. ~~**Passwordless sign-in.**~~ Resolved (Oct 10, 2026): magic links are kept, for log-in only. The shared sender delivers them, and the page shows the same "check your email" message whether or not the address has an account. On the development branch the link inside the email currently points at a Neon host that does not serve the branch (`c-6` instead of `c-7`) and fails until the host is corrected by hand; the same defect stops "Continue with Google". It is a Neon-side defect that we report and don't work around (TECH-STACK section 15, item 3).
 4. **DiceBear style.** Which avatar style to use.

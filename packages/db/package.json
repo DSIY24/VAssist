@@ -3,14 +3,26 @@
     "version": "0.1.0",
     "private": true,
     "type": "module",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "scripts": {
+        "typecheck": "tsc --noEmit",
+        "db:emit": "prisma contract emit",
+        "db:plan": "prisma contract emit && prisma migration plan",
+        "db:show": "prisma migration show",
+        "db:check": "prisma migration check",
+        "db:status": "prisma migration status",
+        "db:migrate": "prisma db migrate --to @contract",
+        "db:verify": "prisma db verify"
+    },
     "dependencies": {
         "@prisma/orm-extension-pgvector": "8.0.0-rc.17",
-        "@prisma/orm-target-postgres": "8.0.0-rc.17",
-        "pg": "^8.23.1",
+        "@prisma/orm-postgres": "8.0.0-rc.17",
         "prisma": "8.0.0-rc.22"
     },
     "devDependencies": {
-        "@types/pg": "^8.23.1",
+        "@types/node": "^24.19.1",
         "typescript": "^5.9.3"
     }
 }

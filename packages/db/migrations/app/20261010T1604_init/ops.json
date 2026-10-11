@@ -1,0 +1,262 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.members",
+    "label": "Create table \"members\"",
+    "summary": "Creates table \"members\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "members"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"members\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"members\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"members\"",
+        "sql": "CREATE TABLE \"public\".\"members\" (\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"role\" text DEFAULT 'owner' NOT NULL,\n  \"user_id\" uuid NOT NULL,\n  \"workspace_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"members\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"members\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.workspaces",
+    "label": "Create table \"workspaces\"",
+    "summary": "Creates table \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"workspaces\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"workspaces\"",
+        "sql": "CREATE TABLE \"public\".\"workspaces\" (\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"name\" text NOT NULL,\n  \"updated_at\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"workspaces\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.members.members_user_id_key",
+    "label": "Add unique constraint on \"members\" (user_id)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "members_user_id_key",
+        "table": "members"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"members_user_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "members_user_id_key",
+          "public",
+          "\"public\".\"members\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"members_user_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"members\" ADD CONSTRAINT \"members_user_id_key\" UNIQUE (\"user_id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"members_user_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "members_user_id_key",
+          "public",
+          "\"public\".\"members\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.members.members_workspace_id_user_id_key",
+    "label": "Add unique constraint on \"members\" (workspace_id, user_id)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "members_workspace_id_user_id_key",
+        "table": "members"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"members_workspace_id_user_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "members_workspace_id_user_id_key",
+          "public",
+          "\"public\".\"members\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"members_workspace_id_user_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"members\" ADD CONSTRAINT \"members_workspace_id_user_id_key\" UNIQUE (\"workspace_id\", \"user_id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"members_workspace_id_user_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "members_workspace_id_user_id_key",
+          "public",
+          "\"public\".\"members\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.members.members_workspace_id_idx_90a9f461",
+    "label": "Create index \"members_workspace_id_idx_90a9f461\" on \"members\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "members_workspace_id_idx_90a9f461",
+        "table": "members"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"members_workspace_id_idx_90a9f461\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"members_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"members_workspace_id_idx_90a9f461\"",
+        "sql": "CREATE INDEX \"members_workspace_id_idx_90a9f461\" ON \"public\".\"members\" (\"workspace_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"members_workspace_id_idx_90a9f461\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"members_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.members.members_workspace_id_fkey",
+    "label": "Add foreign key \"members_workspace_id_fkey\" on \"members\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "members_workspace_id_fkey",
+        "table": "members"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"members_workspace_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "members_workspace_id_fkey",
+          "public",
+          "\"public\".\"members\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"members_workspace_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"members\"\nADD CONSTRAINT \"members_workspace_id_fkey\"\nFOREIGN KEY (\"workspace_id\")\nREFERENCES \"public\".\"workspaces\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"members_workspace_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "members_workspace_id_fkey",
+          "public",
+          "\"public\".\"members\""
+        ]
+      }
+    ]
+  }
+]

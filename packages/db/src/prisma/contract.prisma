@@ -1,0 +1,33 @@
+// use prisma-8
+
+// Everything here lives in `public`. The `neon_auth` schema belongs to Neon
+// Auth: it is never declared in this contract, and no relation points into it,
+// so no migration can create, alter or drop anything there.
+
+model Workspace {
+  id        Uuid              @id @default(sql`gen_random_uuid()`)
+  name      String
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  // A database default only fills this on insert. Every update of a workspace
+  // has to set `updatedAt` itself.
+  updatedAt TimestamptzString @default(now()) @map("updated_at")
+  members   Member[]
+
+  @@map("workspaces")
+}
+
+model Member {
+  id          Uuid              @id @default(sql`gen_random_uuid()`)
+  workspaceId Uuid              @map("workspace_id")
+  // `neon_auth.user.id`, kept as a plain column. Unique on its own: in v1 a
+  // person belongs to exactly one workspace.
+  userId      Uuid              @unique @map("user_id")
+  // Text rather than a Postgres enum, so v2 can add roles without `ALTER TYPE`.
+  // The allowed values are the `MemberRole` type in `src/workspaces.ts`.
+  role        String            @default("owner")
+  createdAt   TimestamptzString @default(now()) @map("created_at")
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@map("members")
+}

@@ -1,4 +1,12 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+
+// The repo-root `.env.local` is the single source of env vars for every
+// package. `loadEnvFile` never overrides a variable that is already set, so
+// values injected by Vercel win, and a missing file (CI, Vercel) is fine.
+const envFile = fileURLToPath(new URL("../../.env.local", import.meta.url));
+if (existsSync(envFile)) process.loadEnvFile(envFile);
 
 const nextConfig: NextConfig = {
     /* config options here */
@@ -8,6 +16,8 @@ const nextConfig: NextConfig = {
     allowedDevOrigins: ["127.0.0.1", "192.168.*.*"],
     cacheComponents: true,
     partialPrefetching: true,
+    // Workspace packages ship TypeScript source.
+    transpilePackages: ["@vassist/db", "@vassist/shared"],
     turbopack: {
         rules: {
             "*.css": {

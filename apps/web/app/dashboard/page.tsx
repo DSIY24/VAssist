@@ -1,7 +1,15 @@
-export default function Dashboard() {
+import type { Metadata } from "next";
+import { LayoutDashboardIcon } from "lucide-react";
+import { EmptyState } from "@/components/dashboard/empty-state";
+
+export const metadata: Metadata = { title: "Overview" };
+
+export default function OverviewPage() {
     return (
-        <main className="flex min-h-svh items-center justify-center">
-            <h1 className="text-2xl font-semibold">Hello in dashboard</h1>
-        </main>
+        <EmptyState
+            icon={LayoutDashboardIcon}
+            title="Nothing to show yet"
+            description="Activity from your workspace will appear here."
+        />
     );
 }

@@ -22,6 +22,9 @@ const eslintConfig = defineConfig([
         "**/dist/**",
         "**/next-env.d.ts",
         "apps/web/public/embed.js",
+        // Emitted by the Prisma CLI.
+        "packages/db/src/prisma/contract.d.ts",
+        "packages/db/migrations/**",
     ]),
 ]);
 
