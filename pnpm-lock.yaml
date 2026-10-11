@@ -324,6 +324,9 @@ importers:
       shadcn:
         specifier: ^4.21.4
         version: 4.21.4(supports-color@7.2.0)
+      sonner:
+        specifier: ^2.0.8
+        version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       streamdown:
         specifier: ^2.7.0
         version: 2.7.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(supports-color@7.2.0)

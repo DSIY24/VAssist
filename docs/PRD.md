@@ -4,7 +4,7 @@
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status       | Agreed (confirmed Sep 26, 2026)                                                                                                                 |
 | Owner        | Jan Marshal                                                                                                                                     |
-| Last updated | Oct 10, 2026                                                                                                                                    |
+| Last updated | Oct 11, 2026                                                                                                                                    |
 | Scope        | v1: live chat + AI support agent                                                                                                                |
 | Glossary     | [`CONTEXT.md`](../CONTEXT.md). Terms in this document follow it                                                                                 |
 | Tech stack   | [`TECH-STACK.md`](./TECH-STACK.md). **Coding agents: this is the tech stack, and the source of truth for how to build what this PRD describes** |
@@ -232,6 +232,15 @@ Priority: **P0** = required for v1. **P2** = later.
 | D-8  | Widget settings use a split layout: settings on the left (about 60–70% of the width), a live widget preview on the right (about 30–40%). The preview reflects every change right away: position, color, agent name, agent avatar, greeting, and the current suggested questions (read-only)                                             | P0       |
 | D-9  | Widget settings: position (bottom-left or bottom-right), accent color (blue by default, or indigo, violet, pink, red, orange, green, each with a readable text color chosen automatically), agent name, agent avatar (optional upload, DiceBear fallback), greeting, and allowed domains. The launcher bubble's icon and text are fixed | P0       |
 | D-10 | A setup checklist (add a source, add an allowed domain, install the snippet) shows until each step is done                                                                                                                                                                                                                              | P0       |
+
+**Dashboard pages.** The dashboard has two pages in v1, named as they appear in the sidebar:
+
+| Page      | Path                                                     | Holds                                                                                                                                                                                                                        |
+| --------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Home**  | `/dashboard`                                             | Where the owner sets the product up: the setup checklist (D-10), the widget settings with the live preview beside them (D-8, D-9), the knowledge base (7.2), and the snippet to install (W-1)                                |
+| **Inbox** | `/dashboard/inbox`, `/dashboard/inbox/{conversation id}` | Where the owner works: the conversation list (D-1), the open conversation with its history and actions (D-2 to D-5), and the visitor details beside it. Each conversation has its own address, so a notification can open it |
+
+Account settings (A-5) open from the user button and are not a sidebar page.
 
 ### 7.5 Agent
 

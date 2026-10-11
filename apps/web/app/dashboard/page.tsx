@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { LayoutDashboardIcon } from "lucide-react";
+import { HouseIcon } from "lucide-react";
 import { EmptyState } from "@/components/dashboard/empty-state";
 
-export const metadata: Metadata = { title: "Overview" };
+export const metadata: Metadata = { title: "Home" };
 
-export default function OverviewPage() {
+export default function HomePage() {
     return (
         <EmptyState
-            icon={LayoutDashboardIcon}
+            icon={HouseIcon}
             title="Nothing to show yet"
             description="Activity from your workspace will appear here."
         />

@@ -184,7 +184,7 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 
 **User button.** A circular `Avatar` showing the photo when the owner has one (Google) and otherwise their initials, with name and email truncated beside it. Its menu holds the name, the email and "Log out". DiceBear avatars come with account settings (PRD A-5).
 
-**Empty state** (`components/dashboard/empty-state.tsx`). An icon tile, an `h2` and one muted line, centered in the content area. Used by the "Overview" and "Inbox" placeholders.
+**Empty state** (`components/dashboard/empty-state.tsx`). An icon tile, an `h2` and one muted line, centered in the content area. Used by the "Home" and "Inbox" placeholders.
 
 ### Rules
 

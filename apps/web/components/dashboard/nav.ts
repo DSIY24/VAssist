@@ -1,4 +1,4 @@
-import { InboxIcon, LayoutDashboardIcon, type LucideIcon } from "lucide-react";
+import { HouseIcon, InboxIcon, type LucideIcon } from "lucide-react";
 
 export type DashboardNavItem = {
     title: string;
@@ -10,9 +10,9 @@ export type DashboardNavItem = {
 
 export const DASHBOARD_NAV: readonly DashboardNavItem[] = [
     {
-        title: "Overview",
+        title: "Home",
         href: "/dashboard",
-        icon: LayoutDashboardIcon,
+        icon: HouseIcon,
         exact: true,
     },
     { title: "Inbox", href: "/dashboard/inbox", icon: InboxIcon },

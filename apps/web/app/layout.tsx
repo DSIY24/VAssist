@@ -3,6 +3,7 @@ import "./globals.css";
 import { Geist, Instrument_Serif } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                     disableTransitionOnChange
                 >
                     <Providers>{children}</Providers>
+                    <Toaster />
                 </ThemeProvider>
             </body>
         </html>
