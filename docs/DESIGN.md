@@ -2,11 +2,11 @@
 
 > **For coding agents:** this is the source of truth for how VAssist _looks_. [`PRD.md`](./PRD.md) defines what it does, [`TECH-STACK.md`](./TECH-STACK.md) how it is built, and [`CONTEXT.md`](../CONTEXT.md) the words used in UI copy. Tokens live in [`apps/web/app/globals.css`](../apps/web/app/globals.css); when a value here and a token there disagree, fix both in the same change.
 
-|                |                                                                 |
-| -------------- | --------------------------------------------------------------- |
-| Status         | First version, written with the landing page (Oct 9, 2026)      |
-| Applies to     | The landing page now; the dashboard and the widget as they land |
-| Companion docs | [`PRD.md`](./PRD.md), [`TECH-STACK.md`](./TECH-STACK.md)        |
+|                |                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Status         | First version, written with the landing page (Oct 9, 2026); auth pages and dashboard shell added Oct 10, 2026; dark mode Oct 11, 2026 |
+| Applies to     | The landing page, the auth pages and the dashboard shell now; the widget as it lands                                                  |
+| Companion docs | [`PRD.md`](./PRD.md), [`TECH-STACK.md`](./TECH-STACK.md)                                                                              |
 
 ---
 
@@ -40,9 +40,11 @@ Hover on a white control is `bg-poster-ink/85`. Frosted surfaces over the stage 
 
 The dashboard and widget use the stock shadcn `neutral` tokens (`background`, `foreground`, `primary`, `muted`, `border`, `destructive` and the rest), defined for light and for `.dark` in `globals.css`. Use them through their utilities (`bg-background`, `text-muted-foreground`, `border-border`).
 
+**Light and dark.** The dashboard and the auth pages follow the theme the owner picks: light, dark or system (the default). `next-themes` puts `dark` on `<html>` through `ThemeProvider` (`components/theme-provider.tsx`, wrapped around the app in `app/layout.tsx`) and remembers the choice in the browser. `ModeToggle` (`components/mode-toggle.tsx`) is the control for it, in the dashboard header and the auth shell header. Product UI gets both themes by using the tokens; reach for a `dark:` utility only where a token can't express the difference.
+
 The widget's accent is chosen by the owner (PRD D-9: blue by default, or indigo, violet, pink, red, orange, green), each with a readable text color picked automatically. That palette is not defined yet. When it is added, record it here.
 
-A marketing surface opts into the dark shadcn tokens by putting `dark` on its root, so focus rings and any stock component inside it read correctly on `poster`.
+A marketing surface is dark whatever the theme: it opts into the dark shadcn tokens by putting `dark` on its own root, so focus rings and any stock component inside it read correctly on `poster`.
 
 ---
 
@@ -74,7 +76,8 @@ Poster type is fluid, sized against both viewport axes so the composition holds 
 ## 4. Shape, spacing and layers
 
 - **Radius.** Marketing controls are full pills (`rounded-full`). Product UI uses the shadcn radius scale (`--radius: 0.625rem`, `rounded-lg` by default). The mobile sheet uses `rounded-b-3xl`.
-- **Brand mark.** A white four-stroke asterisk, `viewBox="0 0 66 62"`, 5px strokes with square caps (`components/landing/brand-mark.tsx`). It takes `currentColor`. The favicon (`app/icon.svg`) is the same mark on a `poster` tile.
+- **Brand mark.** A four-stroke asterisk, `viewBox="0 0 66 62"`, 5px strokes with square caps (`components/brand-mark.tsx`, shared by the landing page, the auth pages and the dashboard). It takes `currentColor`: white on the poster, `foreground` in product UI. The favicon (`app/icon.svg`) is the same mark on a `poster` tile.
+- **Product wordmark.** In the dashboard and on auth pages the brand is the mark next to "VAssist" in Geist (`font-sans text-base font-semibold`). Never Instrument Serif at that size, and never the blossom gradient.
 - **Poster layers.** wordmark `z-1` → subject `z-2` → corner copy `z-3` → brand, nav and button `z-4` → menu trigger `z-12`. Overlays portal to `body` at `z-50`.
 - **Focus.** Every interactive element shows `focus-visible:ring-3 focus-visible:ring-ring/50`.
 
@@ -143,10 +146,17 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 
 ### In use
 
-| Component | Source                     | Notes                                                                                                      |
-| --------- | -------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `Button`  | `components/ui/button.tsx` | shadcn `base-nova` on Base UI. Variants: `default`, `outline`, `secondary`, `ghost`, `destructive`, `link` |
-| `Sheet`   | `components/ui/sheet.tsx`  | Base UI dialog. Gives the scrim, Escape, focus trap and inert background for free                          |
+| Component                              | Source                        | Notes                                                                                                                          |
+| -------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `Button`                               | `components/ui/button.tsx`    | shadcn `base-nova` on Base UI. Variants: `default`, `outline`, `secondary`, `ghost`, `destructive`, `link`                     |
+| `Sheet`                                | `components/ui/sheet.tsx`     | Base UI dialog. Gives the scrim, Escape, focus trap and inert background for free                                              |
+| `Sidebar`                              | `components/ui/sidebar.tsx`   | The dashboard frame. Becomes a `Sheet` below 768px, toggles with Ctrl/Cmd+B, remembers its state in the `sidebar_state` cookie |
+| `DropdownMenu`, `Avatar`, `Tooltip`    | `components/ui/`              | The user button and its menu; tooltips on the collapsed sidebar. A `DropdownMenuLabel` must sit inside a `DropdownMenuGroup`   |
+| `Field`, `Input`, `Label`, `Separator` | `components/ui/`              | Forms. `FieldError` under the field takes React Hook Form errors directly                                                      |
+| `InputOTP`                             | `components/ui/input-otp.tsx` | 6-digit codes, through `components/auth/code-input.tsx`                                                                        |
+| `Skeleton`                             | `components/ui/skeleton.tsx`  | Suspense fallbacks. Don't use `SidebarMenuSkeleton` in a fallback: it calls `Math.random()`, which fails prerendering          |
+| `ModeToggle`                           | `components/mode-toggle.tsx`  | The theme menu (light, dark, system): an outline icon `Button` opening a `DropdownMenu` radio group                            |
+| `useIsMobile`                          | `hooks/use-mobile.ts`         | Our own `useSyncExternalStore` version. The registry's fails lint, so don't re-add it                                          |
 
 ### Recipes
 
@@ -155,7 +165,7 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 ```tsx
 <Button
     nativeButton={false}
-    render={<Link href="/dashboard" />}
+    render={<Link href="/signup" />}
     className="rounded-full bg-poster-ink font-normal text-poster hover:bg-poster-ink/85"
 >
     Get started
@@ -166,6 +176,16 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 
 **Frosted sheet.** `SheetContent side="top"` with `dark rounded-b-3xl border-white/10 bg-poster/70 backdrop-blur-2xl text-poster-ink`. Links inside are `SheetClose` rendered as `Link`, so choosing one closes the sheet.
 
+**Auth shell** (`components/auth/auth-shell.tsx`, from the `login-02` and `signup-02` blocks). One two-column frame for log-in, sign-up, forgot-password, reset-password and the first-run step: the product wordmark, the `ModeToggle` and a `max-w-xs` form column on the left, the cover panel on the right from `lg` up. The cover is the poster in miniature: `dark` on its root, `bg-poster`, the lily from `public/landing/` and the display wordmark, static, with no entrance animation or trail. Lily and wordmark are sized from one variable, `--cover: min(50vw, 86svh)`, so they keep their overlap at any panel shape; like the poster's coordinates (section 6) these values are a composition, not a scale.
+
+**Auth forms** (`components/auth/`). Heading, one line of muted copy, fields, primary button, then secondary actions. Field errors sit under their field. A form-level error (`FormNotice`) sits above the primary button; a notice the page opens with (after a password reset, or a failed log-in link) sits above the fields. Every submit shows a pending label ("Logging in…") and disables the form's buttons. Secondary actions that do something are `Button variant="link"` ("Resend code", "Log out"); ones that go somewhere are `AuthLink` ("Forgot password?", "Use a different email"). The shared pieces are in `auth-parts.tsx`; `VerifyCodeStep` is the one code screen for sign-up and unverified log-in.
+
+**Dashboard shell** (`components/dashboard/`, from the `dashboard-01` block). `Sidebar variant="inset" collapsible="icon"`: product wordmark at the top, the nav items from `nav.ts` as `SidebarMenuButton render={<Link />}` with `tooltip` and `isActive`, the user button at the bottom. The header carries the sidebar trigger, the page title and, at its right edge, the `ModeToggle`. The layout is synchronous and wraps the async shell in `<Suspense>` with `DashboardShellSkeleton`, a static frame of plain `Skeleton` blocks.
+
+**User button.** A circular `Avatar` showing the photo when the owner has one (Google) and otherwise their initials, with name and email truncated beside it. Its menu holds the name, the email and "Log out". DiceBear avatars come with account settings (PRD A-5).
+
+**Empty state** (`components/dashboard/empty-state.tsx`). An icon tile, an `h2` and one muted line, centered in the content area. Used by the "Overview" and "Inbox" placeholders.
+
 ### Rules
 
 - shadcn here is built on **Base UI**, not Radix: compose with the `render` prop where Radix would use `asChild`, and pass `nativeButton={false}` when a button renders a link.
@@ -175,12 +195,12 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 
 ### Landing components
 
-`components/landing/`: `poster.tsx` (the composition and its copy), `poster-stage.tsx` (entrance state), `flower-reveal.tsx` (subject and trail), `poster-menu.tsx` (compact menu), `brand-mark.tsx`.
+`components/landing/`: `poster.tsx` (the composition and its copy), `poster-stage.tsx` (entrance state), `flower-reveal.tsx` (subject and trail), `poster-menu.tsx` (compact menu). The brand mark is shared (`components/brand-mark.tsx`).
 
 ---
 
 ## 8. Open items
 
 1. The widget accent palette from PRD D-9, with its automatic text colors.
-2. Dashboard patterns (conversation list, state badges, source status) as they are built.
+2. Dashboard patterns (conversation list, state badges, source status) as they are built. The shell, the user button and the empty state exist (section 7).
 3. The landing nav links "Knowledge", "Handoff" and "Widget" point at `#` anchors that have no sections yet, because the poster does not scroll. Decide whether they become pages, sections below the poster, or come out.
