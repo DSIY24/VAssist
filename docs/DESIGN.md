@@ -2,11 +2,11 @@
 
 > **For coding agents:** this is the source of truth for how VAssist _looks_. [`PRD.md`](./PRD.md) defines what it does, [`TECH-STACK.md`](./TECH-STACK.md) how it is built, and [`CONTEXT.md`](../CONTEXT.md) the words used in UI copy. Tokens live in [`apps/web/app/globals.css`](../apps/web/app/globals.css); when a value here and a token there disagree, fix both in the same change.
 
-|                |                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Status         | First version, written with the landing page (Oct 9, 2026); auth pages and dashboard shell added Oct 10, 2026; dark mode Oct 11, 2026 |
-| Applies to     | The landing page, the auth pages and the dashboard shell now; the widget as it lands                                                  |
-| Companion docs | [`PRD.md`](./PRD.md), [`TECH-STACK.md`](./TECH-STACK.md)                                                                              |
+|                |                                                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status         | First version, written with the landing page (Oct 9, 2026); auth pages and dashboard shell added Oct 10, 2026; dark mode and the Home page Oct 11, 2026 |
+| Applies to     | The landing page, the auth pages and the dashboard shell now; the widget as it lands                                                                    |
+| Companion docs | [`PRD.md`](./PRD.md), [`TECH-STACK.md`](./TECH-STACK.md)                                                                                                |
 
 ---
 
@@ -42,7 +42,19 @@ The dashboard and widget use the stock shadcn `neutral` tokens (`background`, `f
 
 **Light and dark.** The dashboard and the auth pages follow the theme the owner picks: light, dark or system (the default). `next-themes` puts `dark` on `<html>` through `ThemeProvider` (`components/theme-provider.tsx`, wrapped around the app in `app/layout.tsx`) and remembers the choice in the browser. `ModeToggle` (`components/mode-toggle.tsx`) is the control for it, in the dashboard header and the auth shell header. Product UI gets both themes by using the tokens; reach for a `dark:` utility only where a token can't express the difference.
 
-The widget's accent is chosen by the owner (PRD D-9: blue by default, or indigo, violet, pink, red, orange, green), each with a readable text color picked automatically. That palette is not defined yet. When it is added, record it here.
+**Widget accent palette.** The widget's accent is chosen by the owner (PRD D-9), blue by default. Each accent comes with the text color that stays readable on it, at 4.5:1 or better:
+
+| Accent   | Background | Text      | Contrast |
+| -------- | ---------- | --------- | -------- |
+| `blue`   | `#2563eb`  | `#ffffff` | 5.2:1    |
+| `indigo` | `#4f46e5`  | `#ffffff` | 6.3:1    |
+| `violet` | `#7c3aed`  | `#ffffff` | 5.7:1    |
+| `pink`   | `#db2777`  | `#ffffff` | 4.6:1    |
+| `red`    | `#dc2626`  | `#ffffff` | 4.8:1    |
+| `orange` | `#f97316`  | `#161616` | 6.5:1    |
+| `green`  | `#15803d`  | `#ffffff` | 5.0:1    |
+
+The values live in one place, `WIDGET_ACCENTS` in `packages/shared/src/widget.ts`, because the widget, its preview and the embed script all need them. Components never write these hex values: a widget root sets `--widget-accent` and `--widget-accent-foreground` with `widgetAccentStyle(color)` (`components/widget/widget-accent.ts`) and everything inside uses `bg-(--widget-accent)` and `text-(--widget-accent-foreground)`. The accent appears only inside the widget (header, the visitor's own messages, the send button, the launcher) and on the swatches that pick it. It never colors dashboard chrome.
 
 A marketing surface is dark whatever the theme: it opts into the dark shadcn tokens by putting `dark` on its own root, so focus rings and any stock component inside it read correctly on `poster`.
 
@@ -186,6 +198,26 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 
 **Empty state** (`components/dashboard/empty-state.tsx`). An icon tile, an `h2` and one muted line, centered in the content area. Used by the "Home" and "Inbox" placeholders.
 
+**Home page** (`components/home/`). From `lg` up, two columns: the sections on the left and the widget preview in an `aside` on the right (38% wide, `max-w-md`, `border-l`), which is `sticky top-0` so it stays in view while the sections scroll. Below `lg` the sections stack and a "Preview" button at the top opens the same preview in a full-width `Sheet`. The sections, in order: the setup checklist, "Widget", "Knowledge base", "Install".
+
+**Home section** (`HomeSection` in `components/home/home-parts.tsx`). A `rounded-xl border bg-card` block with an `h2`, one muted line and an optional action on the right, a `border-b`, then the content at `p-4`. Each has an `id`, which the checklist links to.
+
+**Setup checklist** (`components/home/setup-checklist.tsx`). Three rows that are links to their section, each with a `CircleIcon` (not done) or `CircleCheckIcon` (done) and a "2 of 3 done" count. Done comes from real data only. The block is not rendered once every step is done.
+
+**Autosaved settings** (`components/home/use-autosave.ts`, `SaveIndicator`). Widget settings have no save button. A choice (accent, position, adding or removing an allowed domain) saves at once; a text field saves 800ms after the last keystroke and on blur. An invalid field shows its error under it and is not saved. The section header carries the indicator: a spinner and "Saving…", a check and "Saved", or "Couldn't save." with a "Try again" link button; a failed change is kept and sent again. Use this pattern for settings; dialogs that create something (a text source) keep an explicit primary button.
+
+**Accent swatches.** A `RadioGroup` whose items are `size-8` circles filled with the accent; the checked one gets a `ring-2 ring-foreground` with a `ring-offset-card` gap and a dot in the accent's text color. Each item's accessible name is the color's name, which is also shown beside the legend.
+
+**Choice cards** (position). A `RadioGroup` of `FieldLabel` cards, each holding a horizontal `Field` with a small diagram, a `FieldTitle` and the `RadioGroupItem`.
+
+**Widget** (`components/widget/`). The visitor's chat UI, built from presentational components that take settings and messages as props and fetch nothing, so the widget route and the settings preview render the same thing: `WidgetPanel` (header, messages, composer), `WidgetLauncher` (the bubble), and their parts `WidgetHeader`, `WidgetMessageList`, `WidgetMessage`, `WidgetSuggestedQuestions`, `WidgetComposer`. The panel is `rounded-2xl border bg-background shadow-xl` and fills its container. The header is the accent with the agent's avatar and name. The agent's and a member's messages sit on the left in `bg-muted` with a name and a small avatar; the visitor's sit on the right in the accent; system messages are centered muted text. Bubbles are `rounded-2xl` with the corner nearest the author squared (`rounded-bl-sm` or `rounded-br-sm`). While the agent is off the panel shows no suggested questions and no "Talk to a human" button (PRD "Agent off").
+
+**Widget preview** (`components/home/widget-preview.tsx`). The widget panel and the open launcher on a stand-in page (`bg-muted/40` with a few `bg-foreground/5` bars), aligned to the corner the owner picked. It reads the form's current values, so it changes before a save completes. The widget inside is `inert`, with a visually hidden sentence describing it. A two-item `ToggleGroup` switches between "Agent off" and "Agent on"; the line under the preview says which one is true right now.
+
+**Source list** (`components/home/knowledge-section.tsx`). Each source is a row: an icon tile (`FileTextIcon` for a file, `TypeIcon` for a text source), the name with its status `Badge` beside it, one muted line of kind, size and "Updated" time, then ghost icon buttons (edit for text sources, delete). Source status badges: `uploaded` is `secondary`, `processing` is `outline`, `ready` is `default`, `failed` is `destructive` with the readable reason in `text-destructive` under the row. Files being uploaded sit above the list with a `Progress` bar; a file that is refused stays there with its reason until dismissed. Deleting asks first, in an `AlertDialog` with a `destructive` action.
+
+**Times in the viewer's zone** (`LocalDateTime` in `components/home/home-parts.tsx`). The server doesn't know the viewer's time zone, so it renders an empty `<time>` and the browser fills it in. Use it for any timestamp shown in the dashboard, so hydration never mismatches.
+
 ### Rules
 
 - shadcn here is built on **Base UI**, not Radix: compose with the `render` prop where Radix would use `asChild`, and pass `nativeButton={false}` when a button renders a link.
@@ -201,6 +233,6 @@ Imagery lives in `apps/web/public/landing/` as 1280px-wide WebP with transparent
 
 ## 8. Open items
 
-1. The widget accent palette from PRD D-9, with its automatic text colors.
-2. Dashboard patterns (conversation list, state badges, source status) as they are built. The shell, the user button and the empty state exist (section 7).
+1. ~~The widget accent palette from PRD D-9~~ Defined (section 2).
+2. Dashboard patterns (conversation list, state badges) as they are built. The shell, the user button, the empty state, the Home page and the source status badges exist (section 7).
 3. The landing nav links "Knowledge", "Handoff" and "Widget" point at `#` anchors that have no sections yet, because the poster does not scroll. Decide whether they become pages, sections below the poster, or come out.
