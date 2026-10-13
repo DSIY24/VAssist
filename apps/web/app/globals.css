@@ -28,6 +28,9 @@
     --font-heading: var(--font-sans);
     --font-sans: var(--font-sans);
     --font-display: var(--font-display), "Times New Roman", Times, serif;
+    --color-syntax-string: var(--syntax-string);
+    --color-syntax-attribute: var(--syntax-attribute);
+    --color-syntax-tag: var(--syntax-tag);
     --color-attention-foreground: var(--attention-foreground);
     --color-attention: var(--attention);
     --color-sidebar-ring: var(--sidebar-ring);
@@ -172,6 +175,10 @@
     /* Something is waiting for the owner. See docs/DESIGN.md section 2. */
     --attention: oklch(0.769 0.165 70);
     --attention-foreground: oklch(0.473 0.125 46);
+    /* Code in the snippet. See docs/DESIGN.md section 2. */
+    --syntax-tag: oklch(0.52 0.2 15);
+    --syntax-attribute: oklch(0.5 0.19 265);
+    --syntax-string: oklch(0.48 0.13 150);
 }
 
 .dark {
@@ -208,6 +215,9 @@
     --sidebar-ring: oklch(0.556 0 0);
     --attention: oklch(0.769 0.165 70);
     --attention-foreground: oklch(0.879 0.153 92);
+    --syntax-tag: oklch(0.8 0.13 15);
+    --syntax-attribute: oklch(0.8 0.11 265);
+    --syntax-string: oklch(0.82 0.15 150);
 }
 
 @layer base {

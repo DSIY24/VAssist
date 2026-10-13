@@ -65,7 +65,9 @@ The values live in one place, `WIDGET_ACCENTS` in `packages/shared/src/widget.ts
 | `human`   | You     | Filled: `bg-primary text-primary-foreground`                    |
 | `closed`  | Closed  | `bg-muted text-muted-foreground`                                |
 
-`attention` is the one product colour beyond the neutrals: an amber (`--attention`, `oklch(0.769 0.165 70)` in both themes) with a readable text colour per theme (`--attention-foreground`). Use it only for something waiting on the owner: the `waiting` badge and count, the tint (`bg-attention/10`) and edge bar of a waiting row, and the "Waiting for you" banner. Never for decoration.
+`attention` is the one colour in product chrome beyond the neutrals: an amber (`--attention`, `oklch(0.769 0.165 70)` in both themes) with a readable text colour per theme (`--attention-foreground`). Use it only for something waiting on the owner: the `waiting` badge and count, the tint (`bg-attention/10`) and edge bar of a waiting row, and the "Waiting for you" banner. Never for decoration.
+
+**Code.** The snippet in the Home page's "Install" section is syntax-highlighted with three tokens, each defined per theme and readable (4.5:1 or better) on the `bg-muted/50` code block: `syntax-tag` (the tag name, rose), `syntax-attribute` (attribute names, blue) and `syntax-string` (quoted values, green). Brackets and `=` are `text-muted-foreground`. Use them only for code shown to the owner, in `font-mono`.
 
 A marketing surface is dark whatever the theme: it opts into the dark shadcn tokens by putting `dark` on its own root, so focus rings and any stock component inside it read correctly on `poster`.
 

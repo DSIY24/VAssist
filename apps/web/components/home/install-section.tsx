@@ -23,6 +23,37 @@ function useAppOrigin() {
     );
 }
 
+type SyntaxKind = "punctuation" | "tag" | "attribute" | "string" | "plain";
+
+const SYNTAX_CLASSES: Record<SyntaxKind, string | undefined> = {
+    punctuation: "text-muted-foreground",
+    tag: "text-syntax-tag",
+    attribute: "text-syntax-attribute",
+    string: "text-syntax-string",
+    plain: undefined,
+};
+
+// Brackets and `=`, a quoted value, a name, then whitespace or anything else.
+const SNIPPET_PARTS = /(<\/?|\/?>|=)|("[^"]*")|([^\s<>="/]+)|(\s+|[\s\S])/g;
+
+/** Splits the snippet's HTML into the parts that are coloured differently. */
+function tokenizeSnippet(snippet: string) {
+    const tokens: { kind: SyntaxKind; text: string }[] = [];
+    // A name right after `<` or `</` is the tag; any other is an attribute.
+    let afterBracket = false;
+    for (const [text, punctuation, string, name] of snippet.matchAll(
+        SNIPPET_PARTS,
+    )) {
+        let kind: SyntaxKind = "plain";
+        if (punctuation) kind = "punctuation";
+        else if (string) kind = "string";
+        else if (name) kind = afterBracket ? "tag" : "attribute";
+        tokens.push({ kind, text });
+        afterBracket = punctuation === "<" || punctuation === "</";
+    }
+    return tokens;
+}
+
 /** The snippet for this workspace, with a button to copy it (PRD W-1). */
 export function InstallSection({ workspaceId }: { workspaceId: string }) {
     const origin = useAppOrigin();
@@ -59,11 +90,25 @@ export function InstallSection({ workspaceId }: { workspaceId: string }) {
             <div className="flex flex-col gap-3">
                 <div className="flex items-start gap-2 rounded-lg border bg-muted/50 p-3">
                     {snippet ? (
-                        <pre className="min-w-0 flex-1 overflow-x-auto py-1 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
-                            <code>{snippet}</code>
+                        <pre className="min-w-0 flex-1 overflow-x-auto py-1 font-mono text-xs leading-relaxed">
+                            <code>
+                                {tokenizeSnippet(snippet).map(
+                                    (token, index) => (
+                                        <span
+                                            key={index}
+                                            className={
+                                                SYNTAX_CLASSES[token.kind]
+                                            }
+                                        >
+                                            {token.text}
+                                        </span>
+                                    ),
+                                )}
+                            </code>
                         </pre>
                     ) : (
-                        <Skeleton className="my-1 h-4 flex-1 bg-foreground/10" />
+                        // As tall as the snippet's five lines.
+                        <Skeleton className="my-1 h-[5lh] flex-1 bg-foreground/10 font-mono text-xs leading-relaxed" />
                     )}
                     <Button
                         type="button"

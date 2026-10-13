@@ -57,7 +57,7 @@ A pnpm workspace with three deployable apps and shared packages:
 
 The widget's embed script (the small loader a customer pastes into their site) lives in `apps/web/embed/` but has its own tiny build, separate from Next.js: **esbuild** bundles it to `apps/web/public/embed.js` (git-ignored, rebuilt by `dev` and `build`), served with a five-minute cache under a stable filename.
 
-**Snippet.** The one line an owner pastes is built by `buildSnippet` in `packages/shared/src/widget.ts`, and nowhere else:
+**Snippet.** The snippet an owner pastes, one attribute per line, is built by `buildSnippet` in `packages/shared/src/widget.ts`, and nowhere else:
 
 ```html
 <script

@@ -66,8 +66,9 @@ export function defaultAgentAvatarUrl(workspaceId: string) {
 }
 
 /**
- * The snippet an owner pastes into their website. The embed script reads the
- * workspace from `data-workspace` on its own `<script>` tag.
+ * The snippet an owner pastes into their website, one attribute per line. The
+ * embed script reads the workspace from `data-workspace` on its own `<script>`
+ * tag.
  */
 export function buildSnippet({
     origin,
@@ -76,7 +77,13 @@ export function buildSnippet({
     origin: string;
     workspaceId: string;
 }) {
-    return `<script src="${origin.replace(/\/+$/, "")}/embed.js" data-workspace="${workspaceId}" async></script>`;
+    return [
+        "<script",
+        `    src="${origin.replace(/\/+$/, "")}/embed.js"`,
+        `    data-workspace="${workspaceId}"`,
+        "    async",
+        "></script>",
+    ].join("\n");
 }
 
 /** Empty means "use the default name". */

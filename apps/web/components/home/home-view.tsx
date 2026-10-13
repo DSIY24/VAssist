@@ -165,7 +165,7 @@ function HomeContent({
         {
             title: "Install the snippet",
             description:
-                "Paste one line into your website. This is done once the widget has loaded there.",
+                "Paste the snippet into your website. This is done once the widget has loaded there.",
             href: "#install",
             done: settings.snippetInstalled,
         },
