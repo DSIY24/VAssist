@@ -4,7 +4,7 @@
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Status       | Agreed (confirmed Sep 26, 2026)                                                                                                                 |
 | Owner        | Jan Marshal                                                                                                                                     |
-| Last updated | Oct 10, 2026                                                                                                                                    |
+| Last updated | Oct 11, 2026                                                                                                                                    |
 | Scope        | v1: live chat + AI support agent                                                                                                                |
 | Glossary     | [`CONTEXT.md`](../CONTEXT.md). Terms in this document follow it                                                                                 |
 | Tech stack   | [`TECH-STACK.md`](./TECH-STACK.md). **Coding agents: this is the tech stack, and the source of truth for how to build what this PRD describes** |
@@ -233,6 +233,15 @@ Priority: **P0** = required for v1. **P2** = later.
 | D-9  | Widget settings: position (bottom-left or bottom-right), accent color (blue by default, or indigo, violet, pink, red, orange, green, each with a readable text color chosen automatically), agent name, agent avatar (optional upload, DiceBear fallback), greeting, and allowed domains. The launcher bubble's icon and text are fixed | P0       |
 | D-10 | A setup checklist (add a source, add an allowed domain, install the snippet) shows until each step is done                                                                                                                                                                                                                              | P0       |
 
+**Dashboard pages.** The dashboard has two pages in v1, named as they appear in the sidebar:
+
+| Page      | Path                                                     | Holds                                                                                                                                                                                                                        |
+| --------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Home**  | `/dashboard`                                             | Where the owner sets the product up: the setup checklist (D-10), the widget settings with the live preview beside them (D-8, D-9), the knowledge base (7.2), and the snippet to install (W-1)                                |
+| **Inbox** | `/dashboard/inbox`, `/dashboard/inbox/{conversation id}` | Where the owner works: the conversation list (D-1), the open conversation with its history and actions (D-2 to D-5), and the visitor details beside it. Each conversation has its own address, so a notification can open it |
+
+Account settings (A-5) open from the user button and are not a sidebar page.
+
 ### 7.5 Agent
 
 | ID    | Requirement                                                                                                                                           | Priority |
@@ -390,4 +399,4 @@ These are open on purpose, not forgotten:
 1. ~~**Models.**~~ Resolved: classifier and short replies `gpt-5-4-nano`, answers and suggested questions `gpt-5-6-terra`, embeddings `qwen3-embedding-0-6b`, all through the Neon AI Gateway (TECH-STACK section 8). Image input is deferred with attachments.
 2. ~~**DOCX.**~~ Resolved: deferred.
 3. ~~**Passwordless sign-in.**~~ Resolved (Oct 10, 2026): magic links are kept, for log-in only. The shared sender delivers them, and the page shows the same "check your email" message whether or not the address has an account. On the development branch the link inside the email currently points at a Neon host that does not serve the branch (`c-6` instead of `c-7`) and fails until the host is corrected by hand; the same defect stops "Continue with Google". It is a Neon-side defect that we report and don't work around (TECH-STACK section 15, item 3).
-4. **DiceBear style.** Which avatar style to use.
+4. **DiceBear style.** Which avatar style to use. Provisional (Oct 11, 2026), for Jan to confirm: the agent's default avatar uses the `glass` style, an abstract gradient with no face, seeded with the workspace id so it never changes, loaded from DiceBear's hosted API (`api.dicebear.com/10.x`). Two things to decide with it: the owner's default avatar (A-5) has no style yet, and the hosted API is free for non-commercial use only, with a request limit, so a real business would run its own instance or bundle the style.

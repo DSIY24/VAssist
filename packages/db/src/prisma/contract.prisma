@@ -11,7 +11,25 @@ model Workspace {
   // A database default only fills this on insert. Every update of a workspace
   // has to set `updatedAt` itself.
   updatedAt TimestamptzString @default(now()) @map("updated_at")
-  members   Member[]
+
+  // Widget settings (PRD D-9). `agentName` is null until the owner sets one:
+  // the default, "{Workspace name} Agent", is derived when read, so it follows
+  // a renamed workspace.
+  widgetPosition     WidgetPosition     @default(bottom_right) @map("widget_position")
+  widgetColor        WidgetColor        @default(blue) @map("widget_color")
+  agentName          String?            @map("agent_name")
+  agentAvatarKey     String?            @map("agent_avatar_key")
+  greeting           String             @default("Hi! How can we help?")
+  allowedDomains     String[] @default(sql`'{}'::text[]`) @map("allowed_domains")
+  suggestedQuestions String[] @default(sql`'{}'::text[]`) @map("suggested_questions")
+  // Set once, by the first widget session on an allowed domain.
+  snippetInstalledAt TimestamptzString? @map("snippet_installed_at")
+
+  members       Member[]
+  sources       Source[]
+  visitors      Visitor[]
+  conversations Conversation[]
+  messages      Message[]
 
   @@map("workspaces")
 }
@@ -30,4 +48,191 @@ model Member {
 
   @@unique([workspaceId, userId])
   @@map("members")
+}
+
+enum WidgetPosition {
+  bottom_left  = "bottom_left"
+  bottom_right = "bottom_right"
+
+  @@type("pg/text@1")
+}
+
+enum WidgetColor {
+  blue   = "blue"
+  indigo = "indigo"
+  violet = "violet"
+  pink   = "pink"
+  red    = "red"
+  orange = "orange"
+  green  = "green"
+
+  @@type("pg/text@1")
+}
+
+enum SourceKind {
+  file = "file"
+  text = "text"
+
+  @@type("pg/text@1")
+}
+
+enum SourceStatus {
+  uploaded   = "uploaded"
+  processing = "processing"
+  ready      = "ready"
+  failed     = "failed"
+
+  @@type("pg/text@1")
+}
+
+// One item in the knowledge base: an uploaded file, or text written in the
+// dashboard. Chunks and embeddings arrive with ingestion.
+model Source {
+  id          Uuid              @id @default(sql`gen_random_uuid()`)
+  workspaceId Uuid              @map("workspace_id")
+  kind        SourceKind
+  // The file name, or the title of a text source. Unique per workspace:
+  // uploading a file with the same name replaces the old version (PRD K-5).
+  name        String
+  // Files only: where the object lives in the `uploads` bucket.
+  storageKey  String?           @map("storage_key")
+  mime        String?
+  sizeBytes   Int?              @map("size_bytes")
+  // Text sources only.
+  text        String?
+  status      SourceStatus      @default(uploaded)
+  // A readable reason, when processing failed.
+  error       String?
+  // Bumped whenever the content changes, so a slow ingest run can tell that
+  // it has been superseded.
+  revision    Int               @default(0)
+  createdAt   TimestamptzString @default(now()) @map("created_at")
+  updatedAt   TimestamptzString @default(now()) @map("updated_at")
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, name])
+  @@map("sources")
+}
+
+// An anonymous person using the widget, with the visitor details the owner
+// sees (PRD section 4). The raw IP is never stored.
+model Visitor {
+  id          Uuid              @id @default(sql`gen_random_uuid()`)
+  workspaceId Uuid              @map("workspace_id")
+  // SHA-256 of the per-visitor secret inside the visitor token. Null for a
+  // visitor that was not created through the widget.
+  tokenHash   String?           @map("token_hash")
+  country     String?
+  city        String?
+  timezone    String?
+  language    String?
+  device      String?
+  browser     String?
+  os          String?
+  page        String?
+  referrer    String?
+  visitCount  Int               @default(1) @map("visit_count")
+  firstSeenAt TimestamptzString @default(now()) @map("first_seen_at")
+  lastSeenAt  TimestamptzString @default(now()) @map("last_seen_at")
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  conversations Conversation[]
+
+  @@map("visitors")
+}
+
+enum ConversationState {
+  ai      = "ai"
+  waiting = "waiting"
+  human   = "human"
+  closed  = "closed"
+
+  @@type("pg/text@1")
+}
+
+enum HandoffReason {
+  low_confidence        = "low_confidence"
+  no_relevant_knowledge = "no_relevant_knowledge"
+  visitor_requested     = "visitor_requested"
+  agent_off             = "agent_off"
+
+  @@type("pg/text@1")
+}
+
+model Conversation {
+  id            Uuid               @id @default(sql`gen_random_uuid()`)
+  workspaceId   Uuid               @map("workspace_id")
+  visitorId     Uuid               @map("visitor_id")
+  state         ConversationState
+  // Why the conversation last moved to `waiting`. Kept after a take over, so
+  // the owner still sees why it arrived.
+  handoffReason HandoffReason?     @map("handoff_reason")
+  // The time of the newest message. Every insert into `messages` sets it.
+  lastMessageAt TimestamptzString  @default(now()) @map("last_message_at")
+  createdAt     TimestamptzString  @default(now()) @map("created_at")
+  closedAt      TimestamptzString? @map("closed_at")
+  workspace     Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  visitor       Visitor            @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  // The inbox list: one workspace's conversations, newest first.
+  @@index(expression: "workspace_id, last_message_at DESC, id DESC", name: "conversations_inbox")
+  // A visitor has at most one open conversation at a time.
+  @@index([visitorId], unique: true, where: "state <> 'closed'", name: "conversations_open_visitor")
+  @@map("conversations")
+}
+
+enum MessageAuthor {
+  visitor = "visitor"
+  agent   = "agent"
+  member  = "member"
+  system  = "system"
+
+  @@type("pg/text@1")
+}
+
+// What a system message announces. Null on every other message.
+enum MessageNotice {
+  greeting  = "greeting"
+  handoff   = "handoff"
+  take_over = "take_over"
+  hand_back = "hand_back"
+  closed    = "closed"
+
+  @@type("pg/text@1")
+}
+
+enum MessageClassification {
+  support_question = "support_question"
+  small_talk       = "small_talk"
+  off_topic        = "off_topic"
+  human_request    = "human_request"
+
+  @@type("pg/text@1")
+}
+
+model Message {
+  id             Uuid                   @id @default(sql`gen_random_uuid()`)
+  workspaceId    Uuid                   @map("workspace_id")
+  conversationId Uuid                   @map("conversation_id")
+  author         MessageAuthor
+  // The member who wrote it, when `author` is `member`. A plain column, like
+  // `members.user_id`: the row must outlive a removed member.
+  memberId       Uuid?                  @map("member_id")
+  notice         MessageNotice?
+  body           String
+  // Image attachments: `[{ storageKey, mime, size }]`.
+  attachments    Jsonb                  @default(json`[]`)
+  // Set on visitor messages the agent classified.
+  classification MessageClassification?
+  // True on a visitor message the agent refused as off-topic.
+  declined       Boolean                @default(false)
+  createdAt      TimestamptzString      @default(now()) @map("created_at")
+  workspace      Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversation   Conversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // One conversation's history, oldest first.
+  @@index(expression: "conversation_id, created_at, id", name: "messages_history")
+  @@map("messages")
 }

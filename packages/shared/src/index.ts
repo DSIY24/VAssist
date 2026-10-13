@@ -1,6 +1,9 @@
 export const APP_NAME = "VAssist";
 
 export { contract, type Contract } from "./contract";
+export * from "./conversation";
+export * from "./knowledge";
+export * from "./widget";
 export {
     createWorkspaceInputSchema,
     workspaceNameSchema,

@@ -57,6 +57,18 @@ A pnpm workspace with three deployable apps and shared packages:
 
 The widget's embed script (the small loader a customer pastes into their site) lives in `apps/web/embed/` but has its own tiny build, separate from Next.js: **esbuild** bundles it to `apps/web/public/embed.js` (git-ignored, rebuilt by `dev` and `build`), served with a five-minute cache under a stable filename.
 
+**Snippet.** The snippet an owner pastes, one attribute per line, is built by `buildSnippet` in `packages/shared/src/widget.ts`, and nowhere else:
+
+```html
+<script
+    src="{app origin}/embed.js"
+    data-workspace="{workspace id}"
+    async
+></script>
+```
+
+The embed script finds its own `<script>` tag and reads the workspace from `data-workspace`; position and color come from the workspace's settings, not from the tag, so changing them never means pasting a new snippet. The app origin is `NEXT_PUBLIC_APP_URL` when set (production) and the dashboard's own origin otherwise (development). The embed script and the widget route are not built yet, so the snippet currently loads nothing.
+
 ---
 
 ## 3. Frontend
@@ -67,7 +79,9 @@ The widget's embed script (the small loader a customer pastes into their site) l
 - **React Hook Form + Zod** for dashboard forms. Zod schemas come from `packages/shared` so forms and API inputs validate identically.
 - **Streamdown** renders Markdown in messages. It's built for streaming AI text, so partially streamed agent replies render cleanly.
 - **Widget:** the chat UI is a Next.js route (for example `/widget/[workspaceId]`) loaded in an iframe. The embed script is a tiny vanilla TypeScript bundle that injects the launcher bubble and the iframe into the customer's page, and passes position and color settings.
-- **Dashboard widget settings** use the split layout from the PRD (settings on the left, a live widget preview on the right). The preview renders the real widget components.
+- **Dashboard widget settings** use the split layout from the PRD (settings on the left, a live widget preview on the right). The preview renders the real widget components. They live on the Home page (`components/home/`), with the knowledge base and the snippet (PRD 7.4, "Dashboard pages").
+- **Widget components** are in `apps/web/components/widget/`: presentational, with settings and messages in as props and callbacks out, and no data access, so the widget route and the preview share them. They exist; the route that feeds them a conversation does not yet.
+- **Widget settings save themselves** (`widget.updateSettings`, a partial update): one request at a time, later changes merged and sent next, a failed change kept and retried (`components/home/use-autosave.ts`). The form is filled once from `widget.getSettings` and never reset from a response, so a save landing mid-typing can't overwrite the field.
 
 ---
 
@@ -103,6 +117,9 @@ Errors are typed with the contract's `errors` definitions and thrown as `ORPCErr
 - **Client:** `client` and `orpc` in `lib/orpc/client.ts` (`RPCLink` to `/rpc`, `createTanstackQueryUtils`) for `useQuery` and `useMutation`. The provider is mounted in the root layout (`components/providers.tsx`).
 - **One query client shape.** `lib/query/client.ts` builds the server and browser clients with the same `RPCJsonSerializer`-based `queryKeyHashFn`, `dehydrate` and `hydrate` settings. They must stay identical, or hydrated data is not found.
 - **Real-time updates:** PartyKit events write directly into the TanStack Query cache (append a message, update a conversation's state) instead of triggering refetches.
+- **Inbox queries** (`components/inbox/queries.ts`). One place builds the options for the conversation list (an infinite query per filter), the counts, a conversation and its messages. `applyConversationChange` writes the result of a reply or a state change into those caches. The server prefetches with the same keys in `components/inbox/prefetch.ts`, but with fetchers that call `serverClient`, because the `orpc` helpers' own fetchers go through the browser client. Until the rooms exist the inbox has no live delivery: `INBOX_REFRESH` in `queries.ts` refetches every 15 seconds and on window focus, and is the one thing the real-time work replaces. Each write handler in `server/conversations.ts` marks where its publish goes.
+- **Dehydrate only what has settled.** The inbox layout and the conversation page share the per-request query client and prefetch at the same time, and the client's default also dehydrates pending queries. `dehydrateSettled` (`prefetch.ts`) hands over successful queries only; without it the layout passes on the page's half-done queries and the browser waits on them without the page's options.
+- **Custom error statuses.** `NOT_FOUND` (404) and `CONFLICT` (409) are in oRPC's default status map, so the handlers need no `errorStatusMap`. The conversation writes answer `CONFLICT` with the current state as data when the conversation is no longer in a state the action starts from.
 
 ---
 
@@ -118,6 +135,8 @@ Errors are typed with the contract's `errors` definitions and thrown as `ORPCErr
 - **Timestamps** use the `*String` column types, because Node 24 has no global `Temporal`. `updated_at` has a database default only, so an update has to set it.
 - **Server-side only.** The browser never talks to the database.
 - **Tenant isolation, with no row-level security:** every data-access function that reads or writes workspace data takes `workspaceId` as a required argument and filters on it. `workspaceId` only ever comes from the procedure context (the session or visitor token), never from client input. Vector search filters by `workspaceId` before ranking.
+- **Conversations** (`src/conversations.ts`). The inbox list is raw SQL (`db.raw.sql`), because it orders by an expression (`waiting` first, then newest message) and joins each row's newest message; it pages by keyset on `(waiting, last_message_at, id)`, with the cursor carrying `last_message_at::text` so no microseconds are lost. Replying, taking over, handing back and closing all go through one helper that locks the conversation row (`FOR NO KEY UPDATE`), checks the state, and writes the messages and the new state in one transaction; a change from the wrong state writes nothing and reports the current state. Timestamps come back from Prisma in Postgres's text form, so the module converts everything it returns to ISO 8601. The owner taking over writes a `take_over` system message for the visitor ("{name} joined the conversation.", or "A person joined…" when the account has no name; never the email).
+- **Example data.** `pnpm --filter @vassist/db db:seed -- <owner email>` fills that owner's workspace with conversations in every state and with every handoff reason. It refuses to run against production, and it is re-runnable: it first removes the visitors it made before (those without a token hash) and touches nothing else. Node runs it directly, so it imports with `.ts` extensions and only from modules that have no extension-less imports (`client.ts`, `notices.ts`).
 - **Verify at implementation:** the recommended way to connect Prisma 8 to Neon from Vercel (serverless) and from Neon Functions.
 
 ---
@@ -216,7 +235,16 @@ Routes answer `202` and work in `waitUntil`. Triggers are at-least-once, so inge
 - Uploads go **directly from the browser** using short-lived presigned URLs issued by an oRPC procedure, which enforces type and size first (10 MB).
 - **Buckets:**
     - `profile-images` is **public-read**. It holds agent avatars (and later member photos), which the dashboard and widget load straight from the object's public URL: `${STORAGE_PUBLIC_BASE_URL}/profile-images/<key>`.
-    - `uploads` is private and holds source files at `workspaces/<workspaceId>/sources/<sourceId>.<ext>` (attachments will use another prefix). `knowledge.createUpload` creates or reuses the source row first (same name, same source and key), then presigns a 5-minute PUT that signs `Content-Type` (derived from the extension) and `Content-Length`. On the development branch this bucket is inherited from the parent branch, so its CORS rule can only be changed there; the inherited rule already allows browser PUTs.
+    - `uploads` is private and holds source files at `workspaces/<workspaceId>/sources/<sourceId>.<ext>` (attachments will use another prefix). `knowledge.createUpload` creates or reuses the source row first (same name, same source and key), then presigns a 5-minute PUT that signs `Content-Type` (derived from the extension) and `Content-Length`. On the development branch this bucket is inherited from the parent branch, so its CORS rule can only be changed there; the inherited rule already allows browser PUTs (confirmed from `http://localhost:3002` on Oct 11, 2026).
+    - **Source upload flow** (`apps/web/server/knowledge.ts`, `apps/web/lib/storage/client.ts`):
+        1. `knowledge.createUpload` takes the file name and size, rejects anything but `.pdf`, `.md` and `.txt` or over 10 MB, and derives the type from the extension. A file source with that name is reused as it is; a text source with that name is a `CONFLICT`.
+        2. The browser PUTs the file with the returned `Content-Type`. Because the size is signed, a body of any other size is refused by the bucket (403).
+        3. `knowledge.confirmUpload` HEADs the object. Nothing there is a `CONFLICT`; over 10 MB deletes the object, marks the source `failed` and answers `PAYLOAD_TOO_LARGE`; otherwise the source becomes `uploaded` with the stored size, and its `revision` goes up by one.
+    - **An upload that never finishes.** There is no status for "uploading", so a new file source is created as `failed` with the reason "The upload didn't finish. Upload it again." and only `confirmUpload` clears it. The dashboard deletes that row itself when the PUT or the confirmation fails; a closed tab leaves it, saying what happened. Replacing a file reuses the source's key, so the PUT overwrites the old object in place and only the row waits for `confirmUpload`. A replacement whose PUT lands but is never confirmed leaves the new file under a row that still has its old size, status and `revision`. That is accepted for v1: the storage event from the PUT starts ingest, which claims the next `revision` itself.
+    - **Deleting a source** deletes the row first, then the object, so the agent stops using it at once; an object that can't be deleted is logged and left behind.
+    - **Text sources** (`knowledge.createTextSource`, `updateTextSource`, `getTextSource`) keep their text in `sources.text`, with `size_bytes` holding its UTF-8 length. Saving an edit raises `revision` and returns the status to `uploaded`. The list (`knowledge.listSources`) never carries the text.
+    - **Not built yet:** ingestion. No function reads these files or texts, so every source stays `uploaded`, there are no chunks to preview (PRD K-6), and the agent stays off. The handlers mark where `source.updated`, `source.deleted` and `knowledge.updated` will be published; nothing is published now.
+- **Agent avatar uploads are not built yet.** The `profile-images` bucket does not exist on the development branch, `widget.getSettings` always returns `agentAvatarUrl: null`, and every workspace shows the generated DiceBear avatar (`defaultAgentAvatarUrl` in `packages/shared/src/widget.ts`). The rest of this section about avatars is the design for when they are built.
 - **Agent avatars** are limited to **2 MB** (Jan's decision; the 10 MB in PRD L-3 applies to attachments and sources) and must be PNG, JPEG, WebP or GIF.
 - **Avatar flow:**
     1. `createAvatarUpload` checks the declared type and size and generates the key on the server, under the workspace's prefix: `workspaces/<workspaceId>/agent-avatar/<uuid>.<ext>`. It returns a presigned PUT (valid for 2 minutes) that signs `Content-Type` and `Cache-Control: public, max-age=31536000, immutable`, which is safe because every upload gets a new key.
@@ -281,7 +309,7 @@ Your training data is likely out of date for these. Always check the linked sour
 1. ~~Models~~ Resolved: see section 8
 2. ~~DOCX support~~ Resolved: deferred
 3. ~~Whether magic links work with Neon's shared email sender~~ Resolved (Oct 10, 2026): the shared sender delivers magic link emails, and the request answers the same for known and unknown addresses. One Neon-side defect is open on the development branch: the auth service builds its own URLs on host `…neonauth.c-6…` while the branch's auth host is `c-7`, and the `c-6` host answers `Upstream control-plane error`. It breaks the link inside the magic link email and the redirect that starts Google sign-in; changing `c-6` to `c-7` by hand completes both. Emailed codes (verification, password reset) are not affected. We don't work around it; it is Neon's to fix
-4. DiceBear avatar style
+4. DiceBear avatar style. Provisional (Oct 11, 2026): `glass` from the hosted API, version 10.x, seeded with the workspace id, for the agent's default avatar. To confirm (PRD section 12, item 4)
 5. ~~PartyServer details~~ Resolved: `Conversation` and `Workspace` party classes with hibernation, rooms named by id, sockets opened with short-lived Next-minted realtime tokens checked in `onBeforeConnect`, and publishing over HTTP with a separate secret (see section 7)
 6. ~~How Prisma 8 connects to Neon on Vercel and in Neon Functions~~ Resolved: the same `postgres()` runtime from `@prisma/orm-postgres` (which brings `pg`) with the pooled `DATABASE_URL` in both; the Neon Function bundles `packages/db` as TypeScript source. pgvector will come from `@prisma/orm-extension-pgvector` (pinned to the same release as `@prisma/orm-postgres`), registered in `prisma.config.ts` and the client when chunks land (both files mark the place; it is not registered yet), with the HNSW index hand-written in its migration
 7. ~~The embed script's bundler~~ Resolved: esbuild (see section 2). It is a single, fast devDependency with no config, and the loader is one small vanilla TypeScript file

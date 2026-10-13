@@ -1,15 +1,39 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { LayoutDashboardIcon } from "lucide-react";
-import { EmptyState } from "@/components/dashboard/empty-state";
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import { HomeSkeleton } from "@/components/home/home-skeleton";
+import { HomeView } from "@/components/home/home-view";
+import { orpc } from "@/lib/orpc/client";
+import { serverClient } from "@/lib/orpc/server";
+import { getServerQueryClient } from "@/lib/query/server";
 
-export const metadata: Metadata = { title: "Overview" };
+export const metadata: Metadata = { title: "Home" };
 
-export default function OverviewPage() {
+// Reads the session through the procedures, so it renders inside `<Suspense>`.
+// `orpc` only builds the query keys here; the calls go through `serverClient`.
+async function HomeData() {
+    const queryClient = getServerQueryClient();
+    await Promise.all([
+        queryClient.prefetchQuery({
+            queryKey: orpc.widget.getSettings.queryKey(),
+            queryFn: () => serverClient.widget.getSettings(),
+        }),
+        queryClient.prefetchQuery({
+            queryKey: orpc.knowledge.listSources.queryKey(),
+            queryFn: () => serverClient.knowledge.listSources(),
+        }),
+    ]);
     return (
-        <EmptyState
-            icon={LayoutDashboardIcon}
-            title="Nothing to show yet"
-            description="Activity from your workspace will appear here."
-        />
+        <HydrationBoundary state={dehydrate(queryClient)}>
+            <HomeView />
+        </HydrationBoundary>
+    );
+}
+
+export default function HomePage() {
+    return (
+        <Suspense fallback={<HomeSkeleton />}>
+            <HomeData />
+        </Suspense>
     );
 }

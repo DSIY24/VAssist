@@ -1,0 +1,1307 @@
+[
+  {
+    "id": "table.conversations",
+    "label": "Create table \"conversations\"",
+    "summary": "Creates table \"conversations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "conversations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"conversations\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"conversations\"",
+        "sql": "CREATE TABLE \"public\".\"conversations\" (\n  \"closed_at\" timestamptz,\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"handoff_reason\" text,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"last_message_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"state\" text NOT NULL,\n  \"visitor_id\" uuid NOT NULL,\n  \"workspace_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"conversations_handoff_reason_check_ae20b9e1\" CHECK (\"handoff_reason\" IN ('low_confidence', 'no_relevant_knowledge', 'visitor_requested', 'agent_off')),\n  CONSTRAINT \"conversations_state_check_c0b30865\" CHECK (\"state\" IN ('ai', 'waiting', 'human', 'closed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"conversations\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.messages",
+    "label": "Create table \"messages\"",
+    "summary": "Creates table \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"messages\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"messages\"",
+        "sql": "CREATE TABLE \"public\".\"messages\" (\n  \"attachments\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n  \"author\" text NOT NULL,\n  \"body\" text NOT NULL,\n  \"classification\" text,\n  \"conversation_id\" uuid NOT NULL,\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"declined\" bool DEFAULT false NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"member_id\" uuid,\n  \"notice\" text,\n  \"workspace_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"messages_author_check_8d9bb6ef\" CHECK (\"author\" IN ('visitor', 'agent', 'member', 'system')),\n  CONSTRAINT \"messages_classification_check_2c7798de\" CHECK (\"classification\" IN ('support_question', 'small_talk', 'off_topic', 'human_request')),\n  CONSTRAINT \"messages_notice_check_f83bec50\" CHECK (\"notice\" IN ('greeting', 'handoff', 'take_over', 'hand_back', 'closed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"messages\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.sources",
+    "label": "Create table \"sources\"",
+    "summary": "Creates table \"sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"sources\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sources\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"sources\"",
+        "sql": "CREATE TABLE \"public\".\"sources\" (\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"error\" text,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"kind\" text NOT NULL,\n  \"mime\" text,\n  \"name\" text NOT NULL,\n  \"revision\" int4 DEFAULT 0 NOT NULL,\n  \"size_bytes\" int4,\n  \"status\" text DEFAULT 'uploaded' NOT NULL,\n  \"storage_key\" text,\n  \"text\" text,\n  \"updated_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"workspace_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"sources_kind_check_6299d266\" CHECK (\"kind\" IN ('file', 'text')),\n  CONSTRAINT \"sources_status_check_fde2d523\" CHECK (\"status\" IN ('uploaded', 'processing', 'ready', 'failed'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"sources\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sources\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.visitors",
+    "label": "Create table \"visitors\"",
+    "summary": "Creates table \"visitors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "visitors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"visitors\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"visitors\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"visitors\"",
+        "sql": "CREATE TABLE \"public\".\"visitors\" (\n  \"browser\" text,\n  \"city\" text,\n  \"country\" text,\n  \"device\" text,\n  \"first_seen_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"language\" text,\n  \"last_seen_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"os\" text,\n  \"page\" text,\n  \"referrer\" text,\n  \"timezone\" text,\n  \"token_hash\" text,\n  \"visit_count\" int4 DEFAULT 1 NOT NULL,\n  \"workspace_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"visitors\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"visitors\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.agent_avatar_key",
+    "label": "Add column \"agent_avatar_key\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "agent_avatar_key",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"agent_avatar_key\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "agent_avatar_key"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"agent_avatar_key\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"agent_avatar_key\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"agent_avatar_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "agent_avatar_key"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.agent_name",
+    "label": "Add column \"agent_name\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "agent_name",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"agent_name\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "agent_name"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"agent_name\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"agent_name\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"agent_name\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "agent_name"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.allowed_domains",
+    "label": "Add column \"allowed_domains\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "allowed_domains",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"allowed_domains\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "allowed_domains"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"allowed_domains\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"allowed_domains\" text[] DEFAULT ('{}'::text[]) NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"allowed_domains\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "allowed_domains"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.greeting",
+    "label": "Add column \"greeting\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "greeting",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"greeting\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "greeting"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"greeting\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"greeting\" text DEFAULT 'Hi! How can we help?' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"greeting\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "greeting"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.snippet_installed_at",
+    "label": "Add column \"snippet_installed_at\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "snippet_installed_at",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"snippet_installed_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "snippet_installed_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"snippet_installed_at\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"snippet_installed_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"snippet_installed_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "snippet_installed_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.suggested_questions",
+    "label": "Add column \"suggested_questions\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "suggested_questions",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"suggested_questions\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "suggested_questions"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"suggested_questions\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"suggested_questions\" text[] DEFAULT ('{}'::text[]) NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"suggested_questions\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "suggested_questions"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.widget_color",
+    "label": "Add column \"widget_color\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "widget_color",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"widget_color\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "widget_color"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"widget_color\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"widget_color\" text DEFAULT 'blue' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"widget_color\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "widget_color"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.workspaces.widget_position",
+    "label": "Add column \"widget_position\" to \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "widget_position",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"widget_position\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "widget_position"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"widget_position\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD COLUMN \"widget_position\" text DEFAULT 'bottom_right' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"widget_position\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "workspaces",
+          "widget_position"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.sources.sources_workspace_id_name_key",
+    "label": "Add unique constraint on \"sources\" (workspace_id, name)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "sources_workspace_id_name_key",
+        "table": "sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"sources_workspace_id_name_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sources_workspace_id_name_key",
+          "public",
+          "\"public\".\"sources\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"sources_workspace_id_name_key\"",
+        "sql": "ALTER TABLE \"public\".\"sources\" ADD CONSTRAINT \"sources_workspace_id_name_key\" UNIQUE (\"workspace_id\", \"name\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"sources_workspace_id_name_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sources_workspace_id_name_key",
+          "public",
+          "\"public\".\"sources\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.workspaces.workspaces_allowed_domains_elem_not_null_50f9fffb",
+    "label": "Add check constraint \"workspaces_allowed_domains_elem_not_null_50f9fffb\" on \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "workspaces_allowed_domains_elem_not_null_50f9fffb",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"workspaces_allowed_domains_elem_not_null_50f9fffb\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_allowed_domains_elem_not_null_50f9fffb",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"workspaces_allowed_domains_elem_not_null_50f9fffb\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD CONSTRAINT \"workspaces_allowed_domains_elem_not_null_50f9fffb\" CHECK (array_position(\"allowed_domains\", NULL) IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"workspaces_allowed_domains_elem_not_null_50f9fffb\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_allowed_domains_elem_not_null_50f9fffb",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.workspaces.workspaces_suggested_questions_elem_not_null_4bc52d93",
+    "label": "Add check constraint \"workspaces_suggested_questions_elem_not_null_4bc52d93\" on \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "workspaces_suggested_questions_elem_not_null_4bc52d93",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"workspaces_suggested_questions_elem_not_null_4bc52d93\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_suggested_questions_elem_not_null_4bc52d93",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"workspaces_suggested_questions_elem_not_null_4bc52d93\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD CONSTRAINT \"workspaces_suggested_questions_elem_not_null_4bc52d93\" CHECK (array_position(\"suggested_questions\", NULL) IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"workspaces_suggested_questions_elem_not_null_4bc52d93\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_suggested_questions_elem_not_null_4bc52d93",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.workspaces.workspaces_widget_color_check_eb1bcf52",
+    "label": "Add check constraint \"workspaces_widget_color_check_eb1bcf52\" on \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "workspaces_widget_color_check_eb1bcf52",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"workspaces_widget_color_check_eb1bcf52\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_widget_color_check_eb1bcf52",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"workspaces_widget_color_check_eb1bcf52\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD CONSTRAINT \"workspaces_widget_color_check_eb1bcf52\" CHECK (\"widget_color\" IN ('blue', 'indigo', 'violet', 'pink', 'red', 'orange', 'green'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"workspaces_widget_color_check_eb1bcf52\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_widget_color_check_eb1bcf52",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.workspaces.workspaces_widget_position_check_a167cc03",
+    "label": "Add check constraint \"workspaces_widget_position_check_a167cc03\" on \"workspaces\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "workspaces_widget_position_check_a167cc03",
+        "table": "workspaces"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"workspaces_widget_position_check_a167cc03\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_widget_position_check_a167cc03",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"workspaces_widget_position_check_a167cc03\"",
+        "sql": "ALTER TABLE \"public\".\"workspaces\" ADD CONSTRAINT \"workspaces_widget_position_check_a167cc03\" CHECK (\"widget_position\" IN ('bottom_left', 'bottom_right'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"workspaces_widget_position_check_a167cc03\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workspaces_widget_position_check_a167cc03",
+          "public",
+          "\"public\".\"workspaces\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.conversations.conversations_inbox_8233c50f",
+    "label": "Create index \"conversations_inbox_8233c50f\" on \"conversations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "conversations_inbox_8233c50f",
+        "table": "conversations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"conversations_inbox_8233c50f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_inbox_8233c50f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"conversations_inbox_8233c50f\"",
+        "sql": "CREATE INDEX \"conversations_inbox_8233c50f\" ON \"public\".\"conversations\" (workspace_id, last_message_at DESC, id DESC)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"conversations_inbox_8233c50f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_inbox_8233c50f\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.conversations.conversations_open_visitor_bef67027",
+    "label": "Create index \"conversations_open_visitor_bef67027\" on \"conversations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "conversations_open_visitor_bef67027",
+        "table": "conversations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"conversations_open_visitor_bef67027\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_open_visitor_bef67027\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"conversations_open_visitor_bef67027\"",
+        "sql": "CREATE UNIQUE INDEX \"conversations_open_visitor_bef67027\" ON \"public\".\"conversations\" (\"visitor_id\") WHERE (state <> 'closed')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"conversations_open_visitor_bef67027\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_open_visitor_bef67027\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.conversations.conversations_visitor_id_idx_f711bdfd",
+    "label": "Create index \"conversations_visitor_id_idx_f711bdfd\" on \"conversations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "conversations_visitor_id_idx_f711bdfd",
+        "table": "conversations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"conversations_visitor_id_idx_f711bdfd\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_visitor_id_idx_f711bdfd\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"conversations_visitor_id_idx_f711bdfd\"",
+        "sql": "CREATE INDEX \"conversations_visitor_id_idx_f711bdfd\" ON \"public\".\"conversations\" (\"visitor_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"conversations_visitor_id_idx_f711bdfd\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_visitor_id_idx_f711bdfd\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.conversations.conversations_workspace_id_idx_90a9f461",
+    "label": "Create index \"conversations_workspace_id_idx_90a9f461\" on \"conversations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "conversations_workspace_id_idx_90a9f461",
+        "table": "conversations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"conversations_workspace_id_idx_90a9f461\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"conversations_workspace_id_idx_90a9f461\"",
+        "sql": "CREATE INDEX \"conversations_workspace_id_idx_90a9f461\" ON \"public\".\"conversations\" (\"workspace_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"conversations_workspace_id_idx_90a9f461\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"conversations_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.messages.messages_conversation_id_idx_0c3639df",
+    "label": "Create index \"messages_conversation_id_idx_0c3639df\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "messages_conversation_id_idx_0c3639df",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"messages_conversation_id_idx_0c3639df\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages_conversation_id_idx_0c3639df\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"messages_conversation_id_idx_0c3639df\"",
+        "sql": "CREATE INDEX \"messages_conversation_id_idx_0c3639df\" ON \"public\".\"messages\" (\"conversation_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"messages_conversation_id_idx_0c3639df\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages_conversation_id_idx_0c3639df\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.messages.messages_history_c21a8864",
+    "label": "Create index \"messages_history_c21a8864\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "messages_history_c21a8864",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"messages_history_c21a8864\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages_history_c21a8864\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"messages_history_c21a8864\"",
+        "sql": "CREATE INDEX \"messages_history_c21a8864\" ON \"public\".\"messages\" (conversation_id, created_at, id)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"messages_history_c21a8864\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages_history_c21a8864\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.messages.messages_workspace_id_idx_90a9f461",
+    "label": "Create index \"messages_workspace_id_idx_90a9f461\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "messages_workspace_id_idx_90a9f461",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"messages_workspace_id_idx_90a9f461\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"messages_workspace_id_idx_90a9f461\"",
+        "sql": "CREATE INDEX \"messages_workspace_id_idx_90a9f461\" ON \"public\".\"messages\" (\"workspace_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"messages_workspace_id_idx_90a9f461\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"messages_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.sources.sources_workspace_id_idx_90a9f461",
+    "label": "Create index \"sources_workspace_id_idx_90a9f461\" on \"sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "sources_workspace_id_idx_90a9f461",
+        "table": "sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"sources_workspace_id_idx_90a9f461\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sources_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"sources_workspace_id_idx_90a9f461\"",
+        "sql": "CREATE INDEX \"sources_workspace_id_idx_90a9f461\" ON \"public\".\"sources\" (\"workspace_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"sources_workspace_id_idx_90a9f461\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sources_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.visitors.visitors_workspace_id_idx_90a9f461",
+    "label": "Create index \"visitors_workspace_id_idx_90a9f461\" on \"visitors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "visitors_workspace_id_idx_90a9f461",
+        "table": "visitors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"visitors_workspace_id_idx_90a9f461\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"visitors_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"visitors_workspace_id_idx_90a9f461\"",
+        "sql": "CREATE INDEX \"visitors_workspace_id_idx_90a9f461\" ON \"public\".\"visitors\" (\"workspace_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"visitors_workspace_id_idx_90a9f461\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"visitors_workspace_id_idx_90a9f461\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.conversations.conversations_workspace_id_fkey",
+    "label": "Add foreign key \"conversations_workspace_id_fkey\" on \"conversations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "conversations_workspace_id_fkey",
+        "table": "conversations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"conversations_workspace_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "conversations_workspace_id_fkey",
+          "public",
+          "\"public\".\"conversations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"conversations_workspace_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"conversations\"\nADD CONSTRAINT \"conversations_workspace_id_fkey\"\nFOREIGN KEY (\"workspace_id\")\nREFERENCES \"public\".\"workspaces\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"conversations_workspace_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "conversations_workspace_id_fkey",
+          "public",
+          "\"public\".\"conversations\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.conversations.conversations_visitor_id_fkey",
+    "label": "Add foreign key \"conversations_visitor_id_fkey\" on \"conversations\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "conversations_visitor_id_fkey",
+        "table": "conversations"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"conversations_visitor_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "conversations_visitor_id_fkey",
+          "public",
+          "\"public\".\"conversations\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"conversations_visitor_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"conversations\"\nADD CONSTRAINT \"conversations_visitor_id_fkey\"\nFOREIGN KEY (\"visitor_id\")\nREFERENCES \"public\".\"visitors\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"conversations_visitor_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "conversations_visitor_id_fkey",
+          "public",
+          "\"public\".\"conversations\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.messages.messages_workspace_id_fkey",
+    "label": "Add foreign key \"messages_workspace_id_fkey\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "messages_workspace_id_fkey",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"messages_workspace_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "messages_workspace_id_fkey",
+          "public",
+          "\"public\".\"messages\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"messages_workspace_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"messages\"\nADD CONSTRAINT \"messages_workspace_id_fkey\"\nFOREIGN KEY (\"workspace_id\")\nREFERENCES \"public\".\"workspaces\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"messages_workspace_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "messages_workspace_id_fkey",
+          "public",
+          "\"public\".\"messages\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.messages.messages_conversation_id_fkey",
+    "label": "Add foreign key \"messages_conversation_id_fkey\" on \"messages\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "messages_conversation_id_fkey",
+        "table": "messages"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"messages_conversation_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "messages_conversation_id_fkey",
+          "public",
+          "\"public\".\"messages\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"messages_conversation_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"messages\"\nADD CONSTRAINT \"messages_conversation_id_fkey\"\nFOREIGN KEY (\"conversation_id\")\nREFERENCES \"public\".\"conversations\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"messages_conversation_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "messages_conversation_id_fkey",
+          "public",
+          "\"public\".\"messages\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.sources.sources_workspace_id_fkey",
+    "label": "Add foreign key \"sources_workspace_id_fkey\" on \"sources\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "sources_workspace_id_fkey",
+        "table": "sources"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"sources_workspace_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sources_workspace_id_fkey",
+          "public",
+          "\"public\".\"sources\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"sources_workspace_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"sources\"\nADD CONSTRAINT \"sources_workspace_id_fkey\"\nFOREIGN KEY (\"workspace_id\")\nREFERENCES \"public\".\"workspaces\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"sources_workspace_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sources_workspace_id_fkey",
+          "public",
+          "\"public\".\"sources\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.visitors.visitors_workspace_id_fkey",
+    "label": "Add foreign key \"visitors_workspace_id_fkey\" on \"visitors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "visitors_workspace_id_fkey",
+        "table": "visitors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"visitors_workspace_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "visitors_workspace_id_fkey",
+          "public",
+          "\"public\".\"visitors\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"visitors_workspace_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"visitors\"\nADD CONSTRAINT \"visitors_workspace_id_fkey\"\nFOREIGN KEY (\"workspace_id\")\nREFERENCES \"public\".\"workspaces\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"visitors_workspace_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "visitors_workspace_id_fkey",
+          "public",
+          "\"public\".\"visitors\""
+        ]
+      }
+    ]
+  }
+]

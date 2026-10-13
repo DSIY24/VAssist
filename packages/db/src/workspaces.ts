@@ -12,7 +12,7 @@ export type Membership = {
 };
 
 /** True when `error`, or one of its causes, is a Postgres unique violation. */
-function isUniqueViolation(error: unknown): boolean {
+export function isUniqueViolation(error: unknown): boolean {
     let current: unknown = error;
     for (
         let depth = 0;

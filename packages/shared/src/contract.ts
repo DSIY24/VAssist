@@ -1,5 +1,8 @@
 import { oc } from "@orpc/contract";
 import { openapi } from "@orpc/openapi";
+import { conversationsContract } from "./conversation";
+import { knowledgeContract } from "./knowledge";
+import { widgetContract } from "./widget";
 import { createWorkspaceInputSchema, workspaceSchema } from "./workspace";
 
 // Applied to every procedure by `base.router` below. The HTTP statuses (401 and 403) come
@@ -41,6 +44,9 @@ export const contract = base.router({
         get: getWorkspace,
         create: createWorkspace,
     },
+    conversations: conversationsContract,
+    widget: widgetContract,
+    knowledge: knowledgeContract,
 });
 
 export type Contract = typeof contract;
