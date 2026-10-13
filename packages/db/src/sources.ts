@@ -107,8 +107,9 @@ export async function hasReadySource(workspaceId: string): Promise<boolean> {
  * The file source an upload goes to. A file source with this name is reused
  * unchanged, so its file is replaced in place and it keeps its key (PRD K-5);
  * otherwise a new one is created with `id` and `storageKey`, marked as not
- * uploaded yet. Nothing about an existing source changes until
- * `completeFileUpload`, so an abandoned replacement leaves the old version.
+ * uploaded yet. An existing source's row does not change until
+ * `completeFileUpload`, but its stored file does as soon as the PUT lands: a
+ * replacement that is never confirmed leaves the new file under the old row.
  */
 export async function startFileUpload({
     workspaceId,

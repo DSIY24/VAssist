@@ -238,9 +238,9 @@ export function KnowledgeSection({
         ]);
         if (!name.success || !size.success) return;
 
-        // A new source that never gets its file is removed again; a
-        // replacement leaves the existing source and its old file as they
-        // were.
+        // A new source that never gets its file is removed again. A
+        // replacement keeps its source, whose row only changes on confirm,
+        // but the PUT has already overwritten the old file by then.
         let created: string | null = null;
         try {
             const started = await client.knowledge.createUpload({
