@@ -1,4 +1,6 @@
 import "server-only";
+import { NEON_AUTH_SESSION_COOKIE_NAME } from "@neondatabase/auth/server";
+import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import { connection } from "next/server";
 import { cache } from "react";
@@ -17,13 +19,19 @@ export type Session = {
     session: { id: string };
 };
 
+/** True when Neon Auth could not be reached at all (DNS, timeout, reset). */
+function isTransportError(error: unknown) {
+    if (typeof error !== "object" || error === null) return false;
+    const { code } = error as { code?: unknown };
+    return typeof code === "string" && code.startsWith("NETWORK_");
+}
+
 /** True for an upstream failure worth a log line: a 5xx or a transport error. */
 function isUnexpected(error: unknown) {
     if (typeof error !== "object" || error === null) return true;
-    const { status, code } = error as { status?: unknown; code?: unknown };
+    const { status } = error as { status?: unknown };
     return (
-        (typeof status === "number" && status >= 500) ||
-        (typeof code === "string" && code.startsWith("NETWORK_"))
+        (typeof status === "number" && status >= 500) || isTransportError(error)
     );
 }
 
@@ -32,11 +40,15 @@ function logFailure(error: unknown) {
     const { status, code, message } = (
         typeof error === "object" && error !== null ? error : {}
     ) as { status?: unknown; code?: unknown; message?: unknown };
-    console.error("Session read failed; treating the request as signed out.", {
-        status: typeof status === "number" ? status : undefined,
-        code: typeof code === "string" ? code : undefined,
-        message: typeof message === "string" ? message : undefined,
-    });
+    // One string: the dev overlay and log file print an object as `{}`.
+    const details = [
+        typeof status === "number" ? status : undefined,
+        typeof code === "string" ? code : undefined,
+        typeof message === "string" ? message : undefined,
+    ].filter((detail) => detail !== undefined);
+    console.error(
+        `Session read failed; treating the request as signed out. (${details.join(" ") || "no details"})`,
+    );
 }
 
 /**
@@ -58,7 +70,19 @@ export const getSession = cache(async (): Promise<Session | null> => {
     // and logging an error for every gated route at build time.
     await connection();
     try {
-        const { data, error } = await getAuth().getSession();
+        // No session cookie means signed out. Answering here keeps `/login` and
+        // `/signup` from calling Neon Auth for every signed-out visitor.
+        const hasSessionCookie = (await cookies())
+            .getAll()
+            .some(({ name }) => name.includes(NEON_AUTH_SESSION_COOKIE_NAME));
+        if (!hasSessionCookie) return null;
+
+        const auth = getAuth();
+        let { data, error } = await auth.getSession();
+        // A transport failure is often a single dropped connection: try once
+        // more before treating a signed-in person as signed out.
+        if (isTransportError(error))
+            ({ data, error } = await auth.getSession());
         if (error) {
             // A 4xx is an ordinary "no session". Anything else is a failure
             // that would otherwise look like one.
